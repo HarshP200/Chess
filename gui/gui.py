@@ -1,8 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
 from PIL import Image, ImageTk
-import os
-import tkinter.simpledialog as simpledialog
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -13,6 +10,13 @@ from logic.piece import Rook
 from logic.piece import Bishop
 from logic.piece import Knight
 
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS  # when bundled by PyInstaller
+    except Exception:
+        base_path = os.path.abspath(".")  # normal dev environment
+    return os.path.join(base_path, relative_path)
 
 class ChessGUI:
     def __init__(self, board):
@@ -146,7 +150,7 @@ class ChessGUI:
         for color in ['w', 'b']:
             for p in pieces:
                 filename = f"{color}{p}.png"
-                path = os.path.join("assets", filename)
+                path = resource_path(os.path.join("assets", filename))
                 image = Image.open(path).resize((self.cell_size, self.cell_size), Image.Resampling.LANCZOS)
                 self.images[f"{color}{p}"] = ImageTk.PhotoImage(image)
 

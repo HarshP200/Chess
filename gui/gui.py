@@ -77,7 +77,7 @@ class ChessGUI:
         piece = self.board.get_piece(from_row, from_col)
 
         if piece and piece.color == self.turn:
-            legal_moves = piece.get_legal_moves(self.board.board, (from_row, from_col))
+            legal_moves = piece.get_legal_moves(self.board.board, (from_row, from_col), self.board.en_passant_target)
             legal_moves = [
                 move for move in legal_moves
                 if not self.board.move_puts_king_in_check((from_row, from_col), move)
@@ -145,7 +145,7 @@ class ChessGUI:
         if self.selected:
             piece = self.board.get_piece(*self.selected)
             if piece and piece.color == self.turn:
-                legal_moves = piece.get_legal_moves(self.board.board, self.selected)
+                legal_moves = piece.get_legal_moves(self.board.board, self.selected, self.board.en_passant_target)
 
                 # Filter moves that don't leave king in check
                 legal_moves = [
@@ -269,7 +269,7 @@ class ChessGUI:
                 if self.selected:
                     piece = self.board.get_piece(*self.selected)
                     if piece and piece.color == self.turn:
-                        legal_moves = piece.get_legal_moves(self.board.board, self.selected)
+                        legal_moves = piece.get_legal_moves(self.board.board, self.selected, self.board.en_passant_target)
 
                         # Filter out illegal moves that would leave king in check
                         legal_moves = [

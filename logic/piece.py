@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 class Piece(ABC):
     def __init__(self, color):
         self.color = color  # 'white' or 'black'
+        self.has_moved = False
 
     @abstractmethod
     def get_legal_moves(self, board, position):
@@ -18,39 +19,43 @@ class Piece(ABC):
 class Pawn(Piece):
     symbol = 'P'
 
-    def get_legal_moves(self, board, pos):
+    def get_legal_moves(self, board, pos, en_passant_target=None):
+        moves = []
         row, col = pos
         direction = -1 if self.color == 'white' else 1
-        legal_moves = []
+        start_row = 6 if self.color == 'white' else 1
 
-        # Move forward 1 square
-        next_row = row + direction
-        if 0 <= next_row < 8 and board[next_row][col] is None:
-            legal_moves.append((next_row, col))
+        # Forward move
+        if 0 <= row + direction < 8 and board[row + direction][col] is None:
+            moves.append((row + direction, col))
+            if row == start_row and board[row + 2 * direction][col] is None:
+                moves.append((row + 2 * direction, col))
 
-            # Move forward 2 squares on first move
-            start_row = 6 if self.color == 'white' else 1
-            if row == start_row:
-                jump_row = row + 2 * direction
-                if board[jump_row][col] is None:
-                    legal_moves.append((jump_row, col))
-
-        # Diagonal captures
+        # Captures
         for dc in [-1, 1]:
             new_col = col + dc
-            if 0 <= new_col < 8 and 0 <= next_row < 8:
-                target = board[next_row][new_col]
-                if self.is_opponent(target):
-                    legal_moves.append((next_row, new_col))
+            new_row = row + direction
+            if 0 <= new_col < 8 and 0 <= new_row < 8:
+                target = board[new_row][new_col]
+                if target and target.color != self.color:
+                    moves.append((new_row, new_col))
 
-        return legal_moves
+        # ✅ En passant
+        if en_passant_target:
+            ep_row, ep_col = en_passant_target
+            if ep_row == row + direction and abs(ep_col - col) == 1:
+                if board[row][ep_col] and isinstance(board[row][ep_col], Pawn) and board[row][ep_col].color != self.color:
+                    moves.append((ep_row, ep_col))
+
+        return moves
+
 
 
 
 class Rook(Piece):
     symbol = 'R'
 
-    def get_legal_moves(self, board, pos):
+    def get_legal_moves(self, board, pos, en_passant_target=None):
         row, col = pos
         legal_moves = []
 
@@ -77,7 +82,7 @@ class Rook(Piece):
 class Knight(Piece):
     symbol = 'N'
 
-    def get_legal_moves(self, board, pos):
+    def get_legal_moves(self, board, pos, en_passant_target=None):
         row, col = pos
         legal_moves = []
 
@@ -98,7 +103,7 @@ class Knight(Piece):
 class Bishop(Piece):
     symbol = 'B'
 
-    def get_legal_moves(self, board, pos):
+    def get_legal_moves(self, board, pos, en_passant_target=None):
         row, col = pos
         legal_moves = []
         directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
@@ -123,7 +128,7 @@ class Bishop(Piece):
 class Queen(Piece):
     symbol = 'Q'
 
-    def get_legal_moves(self, board, pos):
+    def get_legal_moves(self, board, pos, en_passant_target=None):
         row, col = pos
         legal_moves = []
         directions = [
@@ -151,7 +156,7 @@ class Queen(Piece):
 class King(Piece):
     symbol = 'K'
 
-    def get_legal_moves(self, board, pos):
+    def get_legal_moves(self, board, pos, en_passant_target=None):
         row, col = pos
         legal_moves = []
 

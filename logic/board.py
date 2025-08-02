@@ -3,6 +3,8 @@ from logic.piece import Pawn, Rook, Knight, Bishop, Queen, King
 class Board:
     def __init__(self):
         self.board = [[None for _ in range(8)] for _ in range(8)]
+        self.move_history = []
+        self.en_passant_target = None
         self.setup_board()
 
     def is_checkmate(self, color):
@@ -92,16 +94,47 @@ class Board:
         piece = self.board[sr][sc]
 
         if piece:
-            legal_moves = piece.get_legal_moves(self.board, (sr, sc))
+            legal_moves = piece.get_legal_moves(self.board, (sr, sc), self.en_passant_target)
             if (er, ec) in legal_moves:
+
+                # ✅ En passant capture handling
+                if isinstance(piece, Pawn) and self.en_passant_target == (er, ec) and sc != ec and self.board[er][ec] is None:
+                    captured_piece = self.board[sr][ec]  # Captured pawn beside the moving pawn
+                    self.board[sr][ec] = None
+                else:
+                    captured_piece = self.board[er][ec]
+
+                # ✅ Move piece
                 self.board[er][ec] = piece
                 self.board[sr][sc] = None
 
-                # Return promotion flag
+                # ✅ Save move history
+                self.move_history.append({
+                    "piece": piece,
+                    "start": (sr, sc),
+                    "end": (er, ec),
+                    "captured": captured_piece,
+                    "was_first_move": piece.has_moved if hasattr(piece, "has_moved") else None
+                })
+
+                # ✅ Mark pawn as moved
+                if hasattr(piece, "has_moved"):
+                    piece.has_moved = True
+
+                # Handle en passant target update
+                if isinstance(piece, Pawn) and abs(er - sr) == 2:
+                    self.en_passant_target = ((sr + er) // 2, sc)
+                    # print("En passant target:", self.en_passant_target)
+                else:
+                    self.en_passant_target = None
+
+
+                # ✅ Handle promotion
                 if piece.symbol == 'P' and ((piece.color == 'white' and er == 0) or (piece.color == 'black' and er == 7)):
                     return 'promote', (er, ec)
 
                 return True
+
         return False
 
 

@@ -90,13 +90,20 @@ class Board:
         sr, sc = start_pos
         er, ec = end_pos
         piece = self.board[sr][sc]
+
         if piece:
             legal_moves = piece.get_legal_moves(self.board, (sr, sc))
             if (er, ec) in legal_moves:
                 self.board[er][ec] = piece
                 self.board[sr][sc] = None
+
+                # Return promotion flag
+                if piece.symbol == 'P' and ((piece.color == 'white' and er == 0) or (piece.color == 'black' and er == 7)):
+                    return 'promote', (er, ec)
+
                 return True
         return False
+
 
 
     def display(self):

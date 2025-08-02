@@ -2,6 +2,15 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import os
+import tkinter.simpledialog as simpledialog
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from logic.board import Board
+from logic.piece import Queen
+from logic.piece import Rook
+from logic.piece import Bishop
+from logic.piece import Knight
+
 
 class ChessGUI:
     def __init__(self, board):
@@ -69,11 +78,42 @@ class ChessGUI:
                 ]
 
                 if (row, col) in legal_moves:
-                    self.board.move_piece(self.selected, (row, col))
-                    self.selected = None
+                    result = self.board.move_piece(self.selected, (row, col))
 
-                    # Switch turn first
-                    self.turn = 'black' if self.turn == 'white' else 'white'
+                    if result == True or (isinstance(result, tuple) and result[0] == 'promote'):
+                        # Handle promotion if needed
+                        if isinstance(result, tuple) and result[0] == 'promote':
+                            r, c = result[1]
+                            promoted_piece = self.ask_promotion_choice(self.turn)
+                            if promoted_piece == 'Queen':
+                                self.board.board[r][c] = Queen(self.turn)
+                            elif promoted_piece == 'Rook':
+                                self.board.board[r][c] = Rook(self.turn)
+                            elif promoted_piece == 'Bishop':
+                                self.board.board[r][c] = Bishop(self.turn)
+                            elif promoted_piece == 'Knight':
+                                self.board.board[r][c] = Knight(self.turn)
+
+                        self.selected = None
+
+                        # Switch turn first
+                        self.turn = 'black' if self.turn == 'white' else 'white'
+                        self.turn_label.config(text=f"{self.turn.capitalize()}'s Turn")
+
+                        # Now check for game over conditions (for the new player)
+                        if self.board.is_checkmate(self.turn):
+                            self.draw_board()
+                            tk.messagebox.showinfo("Game Over", f"{'White' if self.turn == 'black' else 'Black'} wins by checkmate!")
+                            self.game_over = True
+                            return
+                        elif self.board.is_stalemate(self.turn):
+                            self.draw_board()
+                            tk.messagebox.showinfo("Game Over", "Stalemate! It's a draw.")
+                            self.game_over = True
+                            return
+                    else:
+                        self.selected = None
+
                     self.turn_label.config(text=f"{self.turn.capitalize()}'s Turn")
 
                     # Now check for game over conditions (for the new player)
@@ -98,6 +138,34 @@ class ChessGUI:
                 self.selected = (row, col)
 
         self.draw_board()
+
+
+
+    def ask_promotion_choice(self, color):
+        choice_window = tk.Toplevel(self.window)
+        choice_window.title("Choose Promotion")
+
+        tk.Label(choice_window, text=f"{color.capitalize()} Pawn Promotion", font=("Arial", 14)).pack(pady=10)
+
+        # Store selected piece
+        selected = {'piece': None}
+
+        def choose(piece_name):
+            selected['piece'] = piece_name
+            choice_window.destroy()
+
+        frame = tk.Frame(choice_window)
+        frame.pack(pady=10)
+
+        for piece_name in ['Queen', 'Rook', 'Bishop', 'Knight']:
+            symbol = piece_name[0]
+            if symbol == "K": symbol = "N"
+            image_tag = color[0] + symbol
+            btn = tk.Button(frame, image=self.images[image_tag], command=lambda p=piece_name: choose(p))
+            btn.pack(side='left', padx=10)
+
+        self.window.wait_window(choice_window)
+        return selected['piece']
 
 
     def draw_board(self):
@@ -153,9 +221,6 @@ class ChessGUI:
             self.highlight_square(row, col)
 
     def restart_game(self):
-        import sys, os
-        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-        from logic.board import Board
 
         self.board = Board()
         self.turn = 'white'

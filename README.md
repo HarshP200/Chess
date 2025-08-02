@@ -170,15 +170,6 @@ python main.py
 \- PGN Export / Save Game
 
 
-
-\## 📜 License
-
-
-
-MIT License – see \[LICENSE](LICENSE) for details.
-
-
-
 \## 🙌 Acknowledgements
 
 

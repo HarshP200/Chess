@@ -1,11 +1,68 @@
 from logic.piece import Pawn, Rook, Knight, Bishop, Queen, King
+from collections import defaultdict
+
 
 class Board:
     def __init__(self):
         self.board = [[None for _ in range(8)] for _ in range(8)]
         self.move_history = []
         self.en_passant_target = None
+        self.position_counts = defaultdict(int)
         self.setup_board()
+        self.update_repetition_counter()
+
+    def get_board_hash(self):
+        board_state = []
+        for row in self.board:
+            for piece in row:
+                if piece:
+                    board_state.append(f"{piece.symbol}{piece.color[0]}")
+                else:
+                    board_state.append(".")
+        turn = 'w' if len(self.move_history) % 2 == 0 else 'b'
+        castling = self.get_castling_rights()
+        ep = str(self.en_passant_target) if self.en_passant_target else "-"
+        return "".join(board_state) + turn + castling + ep
+
+
+    def get_position_key(self):
+        key = ""
+        for row in self.board:
+            for piece in row:
+                if piece is None:
+                    key += "."
+                else:
+                    key += piece.symbol if piece.color == 'white' else piece.symbol.lower()
+        if self.en_passant_target:
+            key += f"ep{self.en_passant_target[0]}{self.en_passant_target[1]}"
+        return key
+
+
+    def update_repetition_counter(self):
+        board_hash = self.get_board_hash()
+        self.position_counts[board_hash] += 1
+
+
+    def is_threefold_repetition(self):
+        board_hash = self.get_board_hash()
+        return self.position_counts[board_hash] >= 3
+
+
+    def get_castling_rights(self):
+        rights = ""
+        back_ranks = {'white': 7, 'black': 0}
+        for color in ['white', 'black']:
+            row = back_ranks[color]
+            king = self.get_piece(row, 4)
+            ks_rook = self.get_piece(row, 7)
+            qs_rook = self.get_piece(row, 0)
+            if isinstance(king, King) and not king.has_moved:
+                if isinstance(ks_rook, Rook) and not ks_rook.has_moved:
+                    rights += 'K' if color == 'white' else 'k'
+                if isinstance(qs_rook, Rook) and not qs_rook.has_moved:
+                    rights += 'Q' if color == 'white' else 'q'
+        return rights or "-"
+
 
     def is_checkmate(self, color):
         if not self.is_in_check(color):
@@ -147,6 +204,8 @@ class Board:
                         self.board[sr][0] = None
                         if hasattr(rook, "has_moved"):
                             rook.has_moved = True
+
+                self.update_repetition_counter()
 
                 return True
 

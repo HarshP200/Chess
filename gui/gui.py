@@ -100,6 +100,13 @@ class ChessGUI:
                 self.turn = 'black' if self.turn == 'white' else 'white'
                 self.turn_label.config(text=f"{self.turn.capitalize()}'s Turn")
 
+                # ✅ Check for draw by threefold repetition
+                if self.board.is_threefold_repetition():
+                    self.draw_board()
+                    tk.messagebox.showinfo("Game Over", "Draw by threefold repetition!")
+                    self.game_over = True
+                    return
+
                 if self.board.is_checkmate(self.turn):
                     self.draw_board()
                     tk.messagebox.showinfo("Game Over", f"{'White' if self.turn == 'black' else 'Black'} wins by checkmate!")
@@ -175,6 +182,14 @@ class ChessGUI:
                         # Switch turn first
                         self.turn = 'black' if self.turn == 'white' else 'white'
                         self.turn_label.config(text=f"{self.turn.capitalize()}'s Turn")
+
+                        # ✅ Check for draw by threefold repetition
+                        if self.board.is_threefold_repetition():
+                            self.draw_board()
+                            tk.messagebox.showinfo("Game Over", "Draw by threefold repetition!")
+                            self.game_over = True
+                            return
+
 
                         # Now check for game over conditions (for the new player)
                         if self.board.is_checkmate(self.turn):

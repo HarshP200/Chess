@@ -1,21 +1,25 @@
 from abc import ABC, abstractmethod
 
+# Abstract base class for all chess pieces
 class Piece(ABC):
     def __init__(self, color):
         self.color = color  # 'white' or 'black'
-        self.has_moved = False
+        self.has_moved = False  # Track if the piece has moved (important for castling/pawn double-move)
 
     @abstractmethod
     def get_legal_moves(self, board, position):
         pass
 
+    # Check if a given piece is an opponent
     def is_opponent(self, piece):
         return piece is not None and piece.color != self.color
 
+    # Represent piece with symbol (uppercase for white, lowercase for black)
     def __str__(self):
         return self.symbol.upper() if self.color == 'white' else self.symbol.lower()
 
 
+# Pawn class with en passant and promotion logic
 class Pawn(Piece):
     symbol = 'P'
 
@@ -25,13 +29,14 @@ class Pawn(Piece):
         direction = -1 if self.color == 'white' else 1
         start_row = 6 if self.color == 'white' else 1
 
-        # Forward move
+        # Normal forward move
         if 0 <= row + direction < 8 and board[row + direction][col] is None:
             moves.append((row + direction, col))
+            # First double step
             if row == start_row and board[row + 2 * direction][col] is None:
                 moves.append((row + 2 * direction, col))
 
-        # Captures
+        # Diagonal captures
         for dc in [-1, 1]:
             new_col = col + dc
             new_row = row + direction
@@ -40,7 +45,7 @@ class Pawn(Piece):
                 if target and target.color != self.color:
                     moves.append((new_row, new_col))
 
-        # ✅ En passant
+        # ✅ En passant capture
         if en_passant_target:
             ep_row, ep_col = en_passant_target
             if ep_row == row + direction and abs(ep_col - col) == 1:
@@ -50,8 +55,7 @@ class Pawn(Piece):
         return moves
 
 
-
-
+# Rook class with straight-line movement logic
 class Rook(Piece):
     symbol = 'R'
 
@@ -59,7 +63,7 @@ class Rook(Piece):
         row, col = pos
         legal_moves = []
 
-        # Directions: up, down, left, right
+        # Movement in 4 straight directions
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for dr, dc in directions:
@@ -79,6 +83,7 @@ class Rook(Piece):
         return legal_moves
 
 
+# Knight class with L-shaped moves
 class Knight(Piece):
     symbol = 'N'
 
@@ -86,7 +91,7 @@ class Knight(Piece):
         row, col = pos
         legal_moves = []
 
-        # All 8 possible L-shaped moves
+        # 8 L-shaped jump possibilities
         deltas = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
                   (1, -2), (1, 2), (2, -1), (2, 1)]
 
@@ -100,6 +105,7 @@ class Knight(Piece):
         return legal_moves
 
 
+# Bishop class with diagonal movement
 class Bishop(Piece):
     symbol = 'B'
 
@@ -125,6 +131,7 @@ class Bishop(Piece):
         return legal_moves
 
 
+# Queen combines rook and bishop moves
 class Queen(Piece):
     symbol = 'Q'
 
@@ -132,8 +139,8 @@ class Queen(Piece):
         row, col = pos
         legal_moves = []
         directions = [
-            (-1, 0), (1, 0), (0, -1), (0, 1),  # rook moves
-            (-1, -1), (-1, 1), (1, -1), (1, 1) # bishop moves
+            (-1, 0), (1, 0), (0, -1), (0, 1),  # Rook moves
+            (-1, -1), (-1, 1), (1, -1), (1, 1) # Bishop moves
         ]
 
         for dr, dc in directions:
@@ -153,6 +160,7 @@ class Queen(Piece):
         return legal_moves
 
 
+# King class with castling logic
 class King(Piece):
     symbol = 'K'
 
@@ -160,7 +168,7 @@ class King(Piece):
         row, col = pos
         legal_moves = []
 
-        # All 8 adjacent directions
+        # All 8 adjacent squares
         deltas = [(-1, -1), (-1, 0), (-1, 1),
                   (0, -1),          (0, 1),
                   (1, -1), (1, 0), (1, 1)]
@@ -172,9 +180,9 @@ class King(Piece):
                 if target is None or self.is_opponent(target):
                     legal_moves.append((r, c))
 
-        # ✅ Castling logic
+        # ✅ Castling: move king 2 squares, rook jumps over
         if not getattr(self, "has_moved", False):
-            # Kingside castling
+            # Kingside castling (rook at h-file)
             kingside_rook = board[row][7]
             if isinstance(kingside_rook, Rook) and not getattr(kingside_rook, "has_moved", False):
                 if board[row][5] is None and board[row][6] is None:
@@ -183,7 +191,7 @@ class King(Piece):
                        not self.is_square_attacked(board, (row, 6)):
                         legal_moves.append((row, 6))
 
-            # Queenside castling
+            # Queenside castling (rook at a-file)
             queenside_rook = board[row][0]
             if isinstance(queenside_rook, Rook) and not getattr(queenside_rook, "has_moved", False):
                 if board[row][1] is None and board[row][2] is None and board[row][3] is None:
@@ -194,6 +202,7 @@ class King(Piece):
 
         return legal_moves
 
+    # Helper: Check if square is attacked by any opponent piece
     def is_square_attacked(self, board, square):
         r_sq, c_sq = square
         opponent_color = 'black' if self.color == 'white' else 'white'

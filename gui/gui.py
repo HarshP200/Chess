@@ -36,7 +36,83 @@ class ChessGUI:
         self.draw_board()
 
         self.canvas.bind("<Button-1>", self.handle_click)
-        
+
+        self.dragging = False
+        self.drag_start = None
+
+        self.canvas.bind("<Button-3>", self.start_drag)
+        self.canvas.bind("<B3-Motion>", self.on_drag)
+        self.canvas.bind("<ButtonRelease-3>", self.end_drag)
+
+
+    def start_drag(self, event):
+        if self.game_over:
+            return
+        row = event.y // self.cell_size
+        col = event.x // self.cell_size
+        piece = self.board.get_piece(row, col)
+
+        if piece and piece.color == self.turn:
+            self.drag_start = (row, col)
+            self.dragging = True
+            self.selected = (row, col)
+            self.draw_board()  # ✅ this will now show legal moves
+
+    def on_drag(self, event):
+        if self.dragging:
+            self.draw_board()  # Still highlight squares
+            # Optional: show a ghost image following cursor
+
+    def end_drag(self, event):
+        if not self.dragging or not self.drag_start:
+            return
+
+        self.dragging = False
+        from_row, from_col = self.drag_start
+        to_row = event.y // self.cell_size
+        to_col = event.x // self.cell_size
+        self.drag_start = None
+        self.selected = None
+
+        piece = self.board.get_piece(from_row, from_col)
+
+        if piece and piece.color == self.turn:
+            legal_moves = piece.get_legal_moves(self.board.board, (from_row, from_col))
+            legal_moves = [
+                move for move in legal_moves
+                if not self.board.move_puts_king_in_check((from_row, from_col), move)
+            ]
+            if (to_row, to_col) in legal_moves:
+                result = self.board.move_piece((from_row, from_col), (to_row, to_col))
+
+                if isinstance(result, tuple) and result[0] == 'promote':
+                    r, c = result[1]
+                    promoted_piece = self.ask_promotion_choice(self.turn)
+                    if promoted_piece == 'Queen':
+                        self.board.board[r][c] = Queen(self.turn)
+                    elif promoted_piece == 'Rook':
+                        self.board.board[r][c] = Rook(self.turn)
+                    elif promoted_piece == 'Bishop':
+                        self.board.board[r][c] = Bishop(self.turn)
+                    elif promoted_piece == 'Knight':
+                        self.board.board[r][c] = Knight(self.turn)
+
+                self.turn = 'black' if self.turn == 'white' else 'white'
+                self.turn_label.config(text=f"{self.turn.capitalize()}'s Turn")
+
+                if self.board.is_checkmate(self.turn):
+                    self.draw_board()
+                    tk.messagebox.showinfo("Game Over", f"{'White' if self.turn == 'black' else 'Black'} wins by checkmate!")
+                    self.game_over = True
+                    return
+                elif self.board.is_stalemate(self.turn):
+                    self.draw_board()
+                    tk.messagebox.showinfo("Game Over", "Stalemate! It's a draw.")
+                    self.game_over = True
+                    return
+
+        self.draw_board()
+
 
 
     def load_images(self):

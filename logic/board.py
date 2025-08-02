@@ -132,6 +132,21 @@ class Board:
                 # ✅ Handle promotion
                 if piece.symbol == 'P' and ((piece.color == 'white' and er == 0) or (piece.color == 'black' and er == 7)):
                     return 'promote', (er, ec)
+                
+                                # ✅ Handle castling
+                if isinstance(piece, King) and abs(ec - sc) == 2:
+                    if ec == 6:  # Kingside castling
+                        rook = self.board[sr][7]
+                        self.board[sr][5] = rook
+                        self.board[sr][7] = None
+                        if hasattr(rook, "has_moved"):
+                            rook.has_moved = True
+                    elif ec == 2:  # Queenside castling
+                        rook = self.board[sr][0]
+                        self.board[sr][3] = rook
+                        self.board[sr][0] = None
+                        if hasattr(rook, "has_moved"):
+                            rook.has_moved = True
 
                 return True
 

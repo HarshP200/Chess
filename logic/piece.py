@@ -172,4 +172,35 @@ class King(Piece):
                 if target is None or self.is_opponent(target):
                     legal_moves.append((r, c))
 
+        # ✅ Castling logic
+        if not getattr(self, "has_moved", False):
+            # Kingside castling
+            kingside_rook = board[row][7]
+            if isinstance(kingside_rook, Rook) and not getattr(kingside_rook, "has_moved", False):
+                if board[row][5] is None and board[row][6] is None:
+                    if not self.is_square_attacked(board, (row, col)) and \
+                       not self.is_square_attacked(board, (row, 5)) and \
+                       not self.is_square_attacked(board, (row, 6)):
+                        legal_moves.append((row, 6))
+
+            # Queenside castling
+            queenside_rook = board[row][0]
+            if isinstance(queenside_rook, Rook) and not getattr(queenside_rook, "has_moved", False):
+                if board[row][1] is None and board[row][2] is None and board[row][3] is None:
+                    if not self.is_square_attacked(board, (row, col)) and \
+                       not self.is_square_attacked(board, (row, 2)) and \
+                       not self.is_square_attacked(board, (row, 3)):
+                        legal_moves.append((row, 2))
+
         return legal_moves
+
+    def is_square_attacked(self, board, square):
+        r_sq, c_sq = square
+        opponent_color = 'black' if self.color == 'white' else 'white'
+        for r in range(8):
+            for c in range(8):
+                piece = board[r][c]
+                if piece and piece.color == opponent_color:
+                    if square in piece.get_legal_moves(board, (r, c)):
+                        return True
+        return False
